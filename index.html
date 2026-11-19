@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cronômetro de Boxe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Archivo:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EFEDE8; --surface:#FFFFFF; --ink:#16181D; --muted:#6A6E78; --line:#D9D6CE;
+  --fight:#C8102E; --rest:#1F4E9E; --done:#16181D; --track:#E3E0D8; --on-accent:#FFFFFF;
+  --phase:var(--ink);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1116; --surface:#181B22; --ink:#F2F0EA; --muted:#9298A4; --line:#2A2E38;
+    --fight:#E5384F; --rest:#5B8DEF; --done:#F2F0EA; --track:#242833; --on-accent:#0F1116;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1116; --surface:#181B22; --ink:#F2F0EA; --muted:#9298A4; --line:#2A2E38;
+  --fight:#E5384F; --rest:#5B8DEF; --done:#F2F0EA; --track:#242833; --on-accent:#0F1116;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Archivo,system-ui,sans-serif;min-height:100vh;
+  display:flex;justify-content:center;transition:background .3s}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+main{width:100%;max-width:460px;padding:20px 20px 32px;display:flex;flex-direction:column;gap:20px}
+.phase{font-family:"Big Shoulders Display",Impact,sans-serif;font-weight:900;font-size:28px;letter-spacing:.04em;
+  text-align:center;color:var(--phase);min-height:34px;margin:8px 0 0}
+.dial{position:relative;width:min(78vw,340px);aspect-ratio:1;margin:0 auto}
+.dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+.dial circle{fill:none;stroke-width:10}
+.dial .track{stroke:var(--track)}
+.dial .bar{stroke:var(--phase);stroke-linecap:round;transition:stroke .3s}
+.time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.time b{font-family:"Big Shoulders Display",Impact,sans-serif;font-weight:900;font-size:clamp(76px,22vw,112px);line-height:.95;
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.time span{color:var(--muted);font-size:15px;margin-top:6px}
+.controls{display:flex;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);
+  min-height:52px;padding:0 18px;font-weight:600;font-size:16px}
+button:focus-visible{outline:3px solid var(--rest);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.go{flex:1;background:var(--fight);border-color:var(--fight);color:var(--on-accent);font-family:"Big Shoulders Display",Impact,sans-serif;
+  font-size:24px;font-weight:900;letter-spacing:.05em}
+.settings{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:6px 16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.row+.row{border-top:1px solid var(--line)}
+.row label{font-weight:600}
+.row small{display:block;color:var(--muted);font-weight:400;font-size:13px;margin-top:2px}
+.step{display:flex;align-items:center;gap:4px}
+.step button{width:44px;min-height:44px;padding:0;font-size:22px;border-radius:10px}
+.step output{min-width:68px;text-align:center;font-family:"Big Shoulders Display",Impact,sans-serif;font-weight:700;font-size:28px;
+  font-variant-numeric:tabular-nums}
+.test{align-self:center;background:none;border:none;color:var(--muted);text-decoration:underline;min-height:40px;font-weight:400;font-size:14px}
+.saved{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.saved h2{font-family:"Big Shoulders Display",Impact,sans-serif;font-weight:900;font-size:24px;letter-spacing:.03em;margin:0 0 12px}
+.save-form{display:flex;gap:8px}
+.save-form input{flex:1;min-width:0;font:inherit;font-size:16px;min-height:48px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.save-form input:focus-visible{outline:3px solid var(--rest);outline-offset:2px}
+.save-form button{background:var(--ink);border-color:var(--ink);color:var(--bg);min-height:48px}
+.list{list-style:none;margin:14px 0 0;padding:0}
+.list li{display:flex;align-items:center;gap:8px;padding:12px 0;border-top:1px solid var(--line)}
+.list .info{flex:1;min-width:0}
+.list .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .info span{color:var(--muted);font-size:13px}
+.list button{min-height:42px;padding:0 12px;font-size:14px}
+.list .load{border-color:var(--rest);color:var(--rest)}
+.empty{color:var(--muted);font-size:14px;margin:12px 0 0}
+.sw{width:28px;height:28px;accent-color:var(--fight);flex:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <p class="phase" id="phase" aria-live="polite">Pronto para lutar</p>
+  <div class="dial">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="track" cx="60" cy="60" r="54"/>
+      <circle class="bar" id="bar" cx="60" cy="60" r="54" stroke-dasharray="339.29" stroke-dashoffset="0"/>
+    </svg>
+    <div class="time"><b id="clock">03:00</b><span id="sub">3 rounds</span></div>
+  </div>
+  <div class="controls">
+    <button class="go" id="go">INICIAR</button>
+    <button id="reset" aria-label="Reiniciar">Reiniciar</button>
+  </div>
+  <section class="settings" aria-label="Configurações">
+    <div class="row"><label>Rounds</label>
+      <div class="step"><button data-k="rounds" data-d="-1" aria-label="Menos rounds">−</button><output id="v-rounds"></output><button data-k="rounds" data-d="1" aria-label="Mais rounds">+</button></div></div>
+    <div class="row"><label>Tempo do round<small>ajuste de 15 em 15 segundos</small></label>
+      <div class="step"><button data-k="roundSec" data-d="-15" aria-label="Menos tempo de round">−</button><output id="v-roundSec"></output><button data-k="roundSec" data-d="15" aria-label="Mais tempo de round">+</button></div></div>
+    <div class="row"><label>Descanso<small>começa assim que o round acaba</small></label>
+      <div class="step"><button data-k="restSec" data-d="-5" aria-label="Menos descanso">−</button><output id="v-restSec"></output><button data-k="restSec" data-d="5" aria-label="Mais descanso">+</button></div></div>
+    <div class="row"><label for="mode">Som garantido<small>Toca no silencioso e com a tela bloqueada, mas pausa a música de outros apps</small></label>
+      <input type="checkbox" id="mode" class="sw"></div>
+  </section>
+  <section class="saved" aria-label="Treinos salvos">
+    <h2>Meus treinos</h2>
+    <div class="save-form">
+      <input id="w-name" type="text" maxlength="40" placeholder="Nome do treino" aria-label="Nome do treino">
+      <button id="w-save">Salvar treino</button>
+    </div>
+    <ul class="list" id="w-list"></ul>
+    <p class="empty" id="w-empty">Nenhum treino salvo. Ajuste os valores acima, dê um nome e toque em Salvar treino.</p>
+  </section>
+  <button class="test" id="test">Testar o gongo</button>
+</main>
+<script>
+(function(){
+  var cfg={rounds:3,roundSec:180,restSec:60};
+  try{var s=JSON.parse(localStorage.getItem('boxe-cfg')||'null');if(s&&s.rounds)cfg=s;}catch(e){}
+  var lim={rounds:[1,99],roundSec:[15,1800],restSec:[0,600]};
+  var $=function(id){return document.getElementById(id)};
+  var st={phase:'idle',round:1,endAt:0,left:0,running:false,total:0};
+  var timer=null,ctx=null,master=null,wake=null;
+
+  function fmt(sec){sec=Math.max(0,sec);var m=Math.floor(sec/60),r=sec%60;return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');}
+  function save(){try{localStorage.setItem('boxe-cfg',JSON.stringify(cfg));}catch(e){}}
+
+  /* ---------- Gongo (sintetizado, sem arquivos) ---------- */
+  function audio(){
+    if(!ctx){
+      var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return null;
+      ctx=new AC();
+      var comp=ctx.createDynamicsCompressor();
+      comp.threshold.value=-10;comp.knee.value=6;comp.ratio.value=14;comp.attack.value=.002;comp.release.value=.25;
+      master=ctx.createGain();master.gain.value=.9;
+      master.connect(comp);
+      try{if('audioSession' in navigator)navigator.audioSession.type=safe?'playback':'transient';}catch(e){}
+      if(safe&&ctx.createMediaStreamDestination){
+        var sd=ctx.createMediaStreamDestination();comp.connect(sd);
+        keep=new Audio();keep.srcObject=sd.stream;keep.setAttribute('playsinline','');
+      }else comp.connect(ctx.destination);
+    }
+    return ctx;
+  }
+  var safe=true;try{if(localStorage.getItem('boxe-modo')==='mix')safe=false;}catch(e){}
+  var gongBuf=null,srcs=[],keep=null,testT=null,lastMedia='';
+  function makeGong(){
+    var sr=ctx.sampleRate,dur=4.6,len=Math.floor(sr*dur),buf=ctx.createBuffer(1,len,sr),d=buf.getChannelData(0),i;
+    var parts=[[0.5,.9,4.2],[1,1,3.6],[1.5,.55,3],[2.01,.8,2.8],[2.76,.7,2.4],[4.07,.5,1.8],[5.43,.4,1.3],[6.9,.3,.9],[8.93,.2,.6]];
+    parts.forEach(function(p){
+      [0,1.6].forEach(function(det){
+        var w=2*Math.PI*(392*p[0]+det)/sr,n=Math.min(len,Math.floor(sr*p[2]));
+        for(i=0;i<n;i++)d[i]+=p[1]*Math.sin(w*i)*Math.exp(-9.2*i/(sr*p[2]))*Math.min(1,i/(sr*.003));
+      });
+    });
+    var nl=Math.floor(sr*.05),prev=0,r;
+    for(i=0;i<nl;i++){r=Math.random()*2-1;d[i]+=4*(r-prev)*Math.pow(1-i/nl,3);prev=r;}
+    var mx=0;for(i=0;i<len;i++)mx=Math.max(mx,Math.abs(d[i]));
+    for(i=0;i<len;i++)d[i]=d[i]/mx*.95;
+    gongBuf=buf;
+  }
+  function hit(t){var s=ctx.createBufferSource();s.buffer=gongBuf;s.connect(master);s.start(t);srcs.push(s);}
+  function stopAll(){srcs.forEach(function(s){try{s.stop();}catch(e){}});srcs=[];}
+  /* agenda todos os gongos de uma vez no relógio de áudio: continuam mesmo com a tela bloqueada */
+  function schedule(){
+    var c=audio();if(!c)return;
+    if(!gongBuf)makeGong();
+    var t0=c.currentTime+.05,N=cfg.rounds,R=cfg.roundSec,P=cfg.restSec;
+    hit(t0);
+    for(var r=1;r<=N;r++){
+      var end=t0+r*R+(r-1)*P;
+      if(r<N){hit(end);if(P>0)hit(end+P);}
+      else for(var k=0;k<3;k++)hit(end+k*.42);
+    }
+  }
+  function teardown(){
+    stopAll();lastMedia='';
+    if(keep){try{keep.pause();keep.srcObject=null;}catch(e){}keep=null;}
+    if(ctx){try{ctx.close();}catch(e){}ctx=null;master=null;}
+  }
+  function setMedia(label){
+    if(!keep||!('mediaSession' in navigator)||label===lastMedia)return;
+    lastMedia=label;
+    try{
+      var ms=navigator.mediaSession;
+      ms.metadata=new MediaMetadata({title:label,artist:'Cronômetro de Boxe'});
+      ms.playbackState=st.running?'playing':'paused';
+      ms.setActionHandler('play',function(){if(!st.running)start();});
+      ms.setActionHandler('pause',function(){if(st.running)pause();});
+    }catch(e){}
+  }
+
+  /* ---------- Cronômetro ---------- */
+  function render(){
+    var phase=st.phase,secs,total,label,sub;
+    if(phase==='idle'){secs=cfg.roundSec;total=cfg.roundSec;label='Pronto para lutar';sub=cfg.rounds+(cfg.rounds>1?' rounds':' round');document.documentElement.style.setProperty('--phase','var(--ink)');}
+    else if(phase==='done'){secs=0;total=1;label='Luta encerrada';sub=cfg.rounds+' rounds concluídos';document.documentElement.style.setProperty('--phase','var(--done)');}
+    else{
+      var ms=st.running?Math.max(0,st.endAt-Date.now()):st.left;
+      secs=Math.ceil(ms/1000);total=st.total;
+      if(phase==='round'){label='ROUND '+st.round;sub='de '+cfg.rounds;document.documentElement.style.setProperty('--phase','var(--fight)');}
+      else{label='DESCANSO';sub='próximo: round '+(st.round+1)+' de '+cfg.rounds;document.documentElement.style.setProperty('--phase','var(--rest)');}
+      if(!st.running)label+=' (pausado)';
+      var frac=Math.max(0,Math.min(1,ms/(total*1000)));
+      $('bar').style.strokeDashoffset=(339.29*(1-frac)).toFixed(2);
+    }
+    if(phase==='idle')$('bar').style.strokeDashoffset='0';
+    if(phase==='done')$('bar').style.strokeDashoffset='339.29';
+    $('phase').textContent=label;$('clock').textContent=fmt(secs);$('sub').textContent=sub;
+    document.title=(phase==='round'||phase==='rest')?fmt(secs)+' · '+label:'Cronômetro de Boxe';
+    setMedia(label);
+    $('go').textContent=st.running?'PAUSAR':(phase==='round'||phase==='rest')?'CONTINUAR':phase==='done'?'NOVA LUTA':'INICIAR';
+    var lock=st.phase!=='idle'&&st.phase!=='done';
+    document.querySelectorAll('.step button').forEach(function(b){b.disabled=lock;});
+    document.querySelectorAll('.load').forEach(function(b){b.disabled=lock;});
+    $('mode').disabled=lock;$('test').disabled=lock;
+  }
+  function settingsView(){
+    $('v-rounds').textContent=cfg.rounds;$('v-roundSec').textContent=fmt(cfg.roundSec);$('v-restSec').textContent=fmt(cfg.restSec);
+  }
+  function tick(){
+    if(!st.running)return;
+    var guard=0;
+    while(st.running&&Date.now()>=st.endAt&&guard++<400){
+      if(st.phase==='round'){
+        if(st.round>=cfg.rounds){finish();return;}
+        if(cfg.restSec>0){st.phase='rest';st.total=cfg.restSec;st.endAt+=cfg.restSec*1000;}
+        else{st.round++;st.total=cfg.roundSec;st.endAt+=cfg.roundSec*1000;}
+      }else if(st.phase==='rest'){
+        st.round++;st.phase='round';st.total=cfg.roundSec;st.endAt+=cfg.roundSec*1000;
+      }
+    }
+    render();
+  }
+  function finish(){
+    st.phase='done';st.running=false;clearInterval(timer);timer=null;releaseWake();render();
+    setTimeout(function(){if(st.phase==='done')teardown();},6500);
+  }
+  function start(){
+    if(st.phase==='idle'||st.phase==='done'){
+      teardown();
+      st.phase='round';st.round=1;st.total=cfg.roundSec;st.endAt=Date.now()+cfg.roundSec*1000;
+      schedule();
+    }else{st.endAt=Date.now()+st.left;}
+    if(ctx)ctx.resume();
+    if(keep)keep.play().catch(function(){});
+    st.running=true;
+    if(!timer)timer=setInterval(tick,100);
+    takeWake();render();
+  }
+  function pause(){
+    st.left=Math.max(0,st.endAt-Date.now());st.running=false;
+    if(ctx)ctx.suspend();
+    if(keep)keep.pause();
+    releaseWake();render();
+  }
+  function reset(){
+    st.running=false;st.phase='idle';st.round=1;clearInterval(timer);timer=null;teardown();releaseWake();render();
+  }
+  function takeWake(){try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(l){wake=l;}).catch(function(){});}catch(e){}}
+  function releaseWake(){try{if(wake){wake.release();wake=null;}}catch(e){}}
+  document.addEventListener('visibilitychange',function(){if(!document.hidden&&st.running){takeWake();tick();}});
+
+  $('go').onclick=function(){st.running?pause():start();};
+  $('reset').onclick=reset;
+  $('mode').checked=safe;
+  $('mode').onchange=function(){safe=$('mode').checked;try{localStorage.setItem('boxe-modo',safe?'safe':'mix');}catch(e){}};
+  $('test').onclick=function(){
+    var c=audio();if(!c)return;
+    if(!gongBuf)makeGong();
+    c.resume();if(keep)keep.play().catch(function(){});
+    hit(c.currentTime+.05);
+    clearTimeout(testT);
+    testT=setTimeout(function(){if(st.phase==='idle'||st.phase==='done')teardown();},6000);
+  };
+  document.querySelectorAll('.step button').forEach(function(b){
+    b.onclick=function(){
+      var k=b.dataset.k,d=+b.dataset.d;
+      cfg[k]=Math.min(lim[k][1],Math.max(lim[k][0],cfg[k]+d));
+      save();settingsView();render();
+    };
+  });
+  /* ---------- Treinos salvos ---------- */
+  var workouts=[];
+  try{var w=JSON.parse(localStorage.getItem('boxe-treinos')||'[]');if(Array.isArray(w))workouts=w;}catch(e){}
+  function saveWorkouts(){try{localStorage.setItem('boxe-treinos',JSON.stringify(workouts));}catch(e){}}
+  function isLocked(){return st.phase==='round'||st.phase==='rest';}
+  function summary(t){return t.rounds+(t.rounds>1?' rounds':' round')+' de '+fmt(t.roundSec)+' · descanso '+fmt(t.restSec);}
+  function renderWorkouts(){
+    var ul=$('w-list');ul.innerHTML='';
+    $('w-empty').style.display=workouts.length?'none':'block';
+    workouts.forEach(function(t){
+      var li=document.createElement('li');
+      var info=document.createElement('div');info.className='info';
+      var b=document.createElement('b');b.textContent=t.name;
+      var sp=document.createElement('span');sp.textContent=summary(t);
+      info.appendChild(b);info.appendChild(sp);
+      var load=document.createElement('button');load.className='load';load.textContent='Carregar';load.disabled=isLocked();
+      load.setAttribute('aria-label','Carregar treino '+t.name);
+      load.onclick=function(){
+        cfg={rounds:t.rounds,roundSec:t.roundSec,restSec:t.restSec};
+        save();settingsView();reset();
+      };
+      var del=document.createElement('button');del.textContent='Excluir';
+      del.setAttribute('aria-label','Excluir treino '+t.name);
+      del.onclick=function(){
+        workouts=workouts.filter(function(x){return x.id!==t.id;});
+        saveWorkouts();renderWorkouts();
+      };
+      li.appendChild(info);li.appendChild(load);li.appendChild(del);ul.appendChild(li);
+    });
+  }
+  function addWorkout(){
+    var input=$('w-name');
+    var name=input.value.trim();
+    if(!name)name='Treino '+(workouts.length+1);
+    var item={id:Date.now(),name:name,rounds:cfg.rounds,roundSec:cfg.roundSec,restSec:cfg.restSec};
+    var same=workouts.filter(function(x){return x.name.toLowerCase()===name.toLowerCase();})[0];
+    if(same){same.rounds=item.rounds;same.roundSec=item.roundSec;same.restSec=item.restSec;}
+    else workouts.push(item);
+    saveWorkouts();input.value='';renderWorkouts();
+  }
+  $('w-save').onclick=addWorkout;
+  $('w-name').addEventListener('keydown',function(e){if(e.key==='Enter')addWorkout();});
+
+  settingsView();render();renderWorkouts();
+})();
+</script>
+</body>
+</html>
